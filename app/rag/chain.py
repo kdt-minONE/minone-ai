@@ -8,7 +8,7 @@ from app.rag.retriever import get_retriever
 from app.ai.state import AgentState
 
 # 모델 초기화
-llm = ChatOpenAI(model="gpt-4-1-mini", temperature=0.1)
+llm = ChatOpenAI(model="gpt-4.1-mini", temperature=0.1)
 
 # 모든 함수의 시그니처가 (state: AgentState) -> dict 형태로 변경
 
