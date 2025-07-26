@@ -54,7 +54,7 @@ def get_retriever():
     # 검색기(Retriever) 반환 (가장 유사한 문서 5개 검색)
     return vector_store.as_retriever(search_kwargs={'k': 5})
 
-#python app/rag/retriever.py
+#python app/rag/retriever.py 테스트용
 if __name__ == '__main__':
     retriever = get_retriever()
     print("\n리트리버가 성공적으로 로드되었습니다.")
