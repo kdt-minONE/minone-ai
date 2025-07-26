@@ -126,3 +126,6 @@ logs/
 
 .claude/**
 .gemini/**
+
+# data
+data/laws/
