@@ -57,20 +57,39 @@ def run_minone_agent(question: str) -> str:
     else:
         return "에이전트 실행 중 오류가 발생했습니다."
     
+
+# 로컬 테스트
 if __name__ == "__main__":
-    print("AI 에이전트 로컬 테스트를 시작합니다.")
-    
-    # 1. Vector Store 준비 (최초 1회 또는 업데이트 시 필요)
     print("Vector Store를 준비합니다...")
     get_retriever()
     print("Vector Store 준비 완료.\n")
 
-    # 2. 테스트 질문 정의
-    test_question = "밤 10시에 우리 아파트 앞에서 누가 쓰레기를 무단투기했는데, 어떻게 처리되나요?"
+    # --- 대화형 테스트 루프 ---
     
-    # 3. AI 에이전트 실행
-    final_result = run_minone_agent(test_question)
+    # 1. 첫 질문을 받습니다.
+    initial_question = input("🙋 사용자: ")
     
-    # 4. 최종 결과 출력
-    print("\n--- 최종 결과 ---")
-    print(final_result)
+    # 2. 대화 기록을 저장할 리스트를 만듭니다.
+    conversation_history = [initial_question]
+
+    while True:
+        # 3. 현재까지의 대화 내용을 하나의 질문으로 합칩니다.
+        #    이렇게 해야 AI가 이전 대화의 맥락을 이해할 수 있습니다.
+        full_question = "\n".join(conversation_history)
+        
+        # 4. AI 에이전트를 실행합니다.
+        agent_response = run_minone_agent(full_question)
+        
+        print(f"\n🤖 AI: {agent_response}")
+        
+        # 5. AI의 답변을 확인하고 루프를 계속할지 결정합니다.
+        #    만약 최종 답변 템플릿이 포함되어 있다면, 대화가 끝난 것입니다.
+        if "■ 민원 내용:" in agent_response:
+            print("\n--- 최종 답변이 생성되어 대화를 종료합니다. ---")
+            break
+        
+        # 6. AI가 추가 질문을 했으므로, 사용자의 다음 답변을 입력받습니다.
+        user_response = input("\n🙋 사용자: ")
+        
+        # 7. 사용자의 답변을 대화 기록에 추가하고 다시 루프를 시작합니다.
+        conversation_history.append(user_response)
