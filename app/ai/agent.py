@@ -19,9 +19,9 @@ def route_after_question_assessment(state: AgentState) -> str:
     - sufficient: 정보 충분 -> 문서 검색 단계로 진행
     - insufficient: 정보 불충분 -> 재질문 또는 (횟수 초과 시) 강제 진행
     """
-    assessment_result = state.get("assessment_result", "").lower()
+    assessment_result = state.get("assessment_result", "").lower().strip()
     
-    if "sufficient" in assessment_result:
+    if assessment_result == "sufficient":
         print("✅ 경로 결정: 정보 충분. '문서 검색'으로 이동합니다.")
         # 다음 단계를 위해 재시도 횟수를 초기화합니다.
         state['retries'] = 0
