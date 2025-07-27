@@ -1,5 +1,3 @@
-# app/rag/chain.py
-
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
@@ -39,7 +37,6 @@ def request_clarification_node(state: AgentState) -> dict:
     print(f"생성된 재질문: {clarification_message}")
     
     return {
-        "retries": state['retries'] + 1,
         "messages": [AIMessage(content=clarification_message)]
     }
 
@@ -62,9 +59,14 @@ def assess_answer_quality_node(state: AgentState) -> dict:
     
     quality_assessment_chain = prompts.assess_answer_quality_prompt | llm | StrOutputParser()
     assessment_result = quality_assessment_chain.invoke(state)
+    retries = state.get("retries", 0)
     
     print(f"문서 품질 평가 결과: {assessment_result}")
-    return {"assessment_result": assessment_result}
+    
+    return {
+        "assessment_result": assessment_result,
+        "retries": retries
+    }
 
 
 def generate_answer_node(state: AgentState) -> dict:
@@ -76,14 +78,32 @@ def generate_answer_node(state: AgentState) -> dict:
     answer = rag_chain.invoke({"context": context, "question": state['question']})
     
     print(f"생성된 답변 초안:\n{answer}")
-    return {"answer": answer}
+    # 'assistant_answer' 필드에 초안을 저장
+    return {"assistant_answer": answer}
 
-def format_answer_node(state: AgentState) -> dict:
-    """6. 최종 답변 정형화 노드: 생성된 초안을 공식 템플릿에 맞춰 최종 답변으로 만듭니다."""
-    print("--- 노드 6: 최종 답변 정형화 ---")
+def filter_and_sanitize_node(state: AgentState) -> dict:
+    """6. 민원 필터링 및 정제 노드: 담당자가 볼 수 있도록 원본 질문을 정제합니다."""
+    print("---  노드 6: 민원 내용 필터링 및 정제 ---")
+    question = state['question']
     
-    format_chain = prompts.format_answer_prompt | llm | StrOutputParser()
-    final_answer = format_chain.invoke(state)
+    sanitize_chain = prompts.filter_and_sanitize_prompt | llm | StrOutputParser()
+    cleaned_question = sanitize_chain.invoke({"question": question})
     
-    print(f"최종 정형화된 답변:\n{final_answer}")
-    return {"answer": final_answer, "messages": [AIMessage(content=final_answer)]}
+    print(f"정제된 민원 내용: {cleaned_question}")
+    return {"cleaned_question": cleaned_question}
+
+def create_final_report_node(state: AgentState) -> dict:
+    """7. 최종 보고서 생성 노드: 모든 정보를 취합하여 최종 결과물을 생성합니다."""
+    print("--- 노드 7: 최종 보고서 생성 ---")
+    
+    # 이전 단계의 `generate_answer_node`에서 생성한 답변 초안을 사용합니다.
+    report_chain = prompts.create_final_report_prompt | llm | StrOutputParser()
+    final_report_str = report_chain.invoke({
+        "question": state['question'],
+        "answer": state['assistant_answer'],
+        "cleaned_question": state['cleaned_question']
+    })
+    
+    print(f"최종 생성된 보고서:\n{final_report_str}")
+    # 최종 결과물을 'answer' 필드에 저장하여 출력을 통일합니다.
+    return {"answer": final_report_str}
